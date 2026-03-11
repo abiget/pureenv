@@ -1,8 +1,6 @@
 import os
 import sys
 
-from more_itertools import strip
-
 # Store references to the original int and float functions to avoid issues
 #  if they are overridden in the environment
 _int = int
