@@ -11,6 +11,16 @@ _str = str
 class Env:
     def __init__(self, environ: dict = None):
         self._environ = environ if environ is not None else os.environ
+    def __call__(self, key: str, default: str = None, required: bool = False) -> str:
+        """
+        Get an environment variable as a string.
+        Allows calling env() directly instead of env.str() for convenience.
+
+        Example:
+            env("PORT", default="8080")  # equivalent to env.str("PORT", default="8080")
+        """
+        return self.str(key, default=default, required=required)
+    
     def str(self, key: str, default: str = None,
             required: bool = False) -> str:
         """

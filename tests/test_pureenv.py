@@ -87,3 +87,19 @@ def test_bool_raises_when_required():
 
     with pytest.raises(ValueError, match="MISSING"):
         env.bool("MISSING", required=True)
+
+
+
+def test_env_callable_returns_string():
+    env = Env(environ={"PORT": "8080"})
+    assert env("PORT") == "8080"
+
+def test_env_callable_returns_default():
+    env = Env(environ={})
+    assert env("MISSING", default="foo") == "foo"
+
+def test_env_callable_raises_when_required():
+    env = Env(environ={})
+    
+    with pytest.raises(ValueError, match="MISSING"):
+        env("MISSING", required=True)
