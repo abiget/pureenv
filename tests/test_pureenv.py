@@ -1,4 +1,6 @@
+import os
 import pytest
+import tempfile
 from pureenv import Env
 
 
@@ -103,3 +105,29 @@ def test_env_callable_raises_when_required():
     
     with pytest.raises(ValueError, match="MISSING"):
         env("MISSING", required=True)
+
+
+def test_load_env_file():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as file:
+        file.write("PUREENV_TEST_PORT=9000\n")
+        file.write("# this is a comment\n")
+        file.write("PUREENV_TEST_DEBUG=true\n")
+        file.write("INVALID_LINE\n")
+        file.write("PUREENV_TEST_APP_NAME=pureenv  # inline comment\n")
+        file.write("PUREENV_TEST_DB_URL=postgres://localhost:5432/mydb#users\n")
+
+        filepath = file.name
+
+    env = Env()
+    env._load_env_file(filepath)
+
+    try:
+        assert env.int("PUREENV_TEST_PORT") == 9000
+        assert env.bool("PUREENV_TEST_DEBUG") is True
+        assert env.str("PUREENV_TEST_APP_NAME") == "pureenv"
+        assert env("PUREENV_TEST_DB_URL") == "postgres://localhost:5432/mydb#users" # # in URL preserved
+    finally:
+        # cleanup — remove test vars from os.environ
+        for key in ["PUREENV_TEST_PORT", "PUREENV_TEST_DEBUG", "PUREENV_TEST_APP", "PUREENV_TEST_DB"]:
+            os.environ.pop(key, None)
+    os.unlink(filepath)
