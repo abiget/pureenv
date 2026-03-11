@@ -1,7 +1,7 @@
 import os
 import sys
-
-from more_itertools import strip
+from contextlib import contextmanager
+from typing import Generator
 
 # Store references to the original int and float functions to avoid issues
 #  if they are overridden in the environment
@@ -48,9 +48,37 @@ class Env:
         """
 
         self._environ = environ if environ is not None else os.environ
-
+        self._prefix = ""
         if environ is None: # only auto-load when using real os.environ
             self._load_env_file()
+
+    @contextmanager
+    def prefix(self, prefix: str) -> Generator["Env", None, None]:
+        """
+        Context manager to temporarily set a prefix for all env var lookups.
+
+        Args:
+            prefix: The prefix to prepend to all keys within the block.
+
+        Example:
+            with env.prefix("DB_"):
+                DB_HOST = env("HOST", default="localhost")  # reads DB_HOST
+                DB_PORT = env("PORT", default="5432")       # reads DB_PORT
+                DB_NAME = env("NAME", default="mydb")       # reads DB_NAME
+
+            with env.prefix("REDIS_"):
+                REDIS_HOST = env("HOST", default="localhost")   # reads REDIS_HOST
+                REDIS_PORT = env("PORT", default="6379")        # reads REDIS_PORT
+
+        Note:
+            Use distinct variable names across prefix blocks to avoid
+            overwriting values from previous blocks.
+        """
+
+        self._prefix = prefix
+        yield self
+        self._prefix = ""
+
     
     def _load_env_file(self, filepath: str = ".env") -> None:
         """
@@ -95,10 +123,7 @@ class Env:
                 key = key.strip()
 
                 # remove inline comments
-                value = value.split(" #")
-                
-                if isinstance(value, list):
-                    value = value[0]
+                value = value.split(" #")[0]
                 
                 # strip whitespace and optional quotes
                 value = value.strip().strip('"').strip("'")
@@ -138,17 +163,17 @@ class Env:
         Returns:
             The value of the environment variable as a string, or the default value if not set.
         """
-        value = self._environ.get(key, None)
+        value = self._environ.get(self._prefix + key, None)
 
         if value is None:
             if required:
                 if sys.platform.startswith("win"):
-                    hint = f"set {key}=your_value"
+                    hint = f"set {self._prefix + key}=your_value"
                 else:
-                    hint = f"export {key}=your_value"
+                    hint = f"export {self._prefix + key}=your_value"
 
                 raise ValueError(
-                    f"Required env var '{key}' is not set.\n"
+                    f"Required env var '{self._prefix + key}' is not set.\n"
                     f"→ To fix: {hint}"
                 )
             return _str(default) if default is not None else None
@@ -175,13 +200,13 @@ class Env:
             return _int(value)
         except (ValueError, TypeError):
             # did it come from an env var or the default value?
-            if os.environ.get(key):
+            if os.environ.get(self._prefix + key):
                 raise ValueError(
-                    f"Env var '{key}' has value {value!r} which is not a valid integer."
+                    f"Env var '{self._prefix + key}' has value {value!r} which is not a valid integer."
                 )
             else:
                 raise ValueError(
-                    f"Default value for '{key}' is {value!r} which is not a valid integer."
+                    f"Default value for '{self._prefix + key}' is {value!r} which is not a valid integer."
                 )
         
     def float(self, key: str, default: float = None,
@@ -204,13 +229,13 @@ class Env:
         try:
             return _float(value)
         except (ValueError, TypeError):
-            if os.environ.get(key):
+            if os.environ.get(self._prefix + key):
                 raise ValueError(
-                    f"Env var '{key}' has value {value!r} which is not a valid float."
+                    f"Env var '{self._prefix + key}' has value {value!r} which is not a valid float."
                 )
             else:
                 raise ValueError(
-                    f"Default value for '{key}' is {value!r} which is not a valid float."
+                    f"Default value for '{self._prefix + key}' is {value!r} which is not a valid float."
                 )
         
     def bool(self, key: str, default: bool = None,
@@ -247,14 +272,14 @@ class Env:
         elif value_lower in ("false", "0", "no", "n", "off"):
             return False
         else:
-            if os.environ.get(key):
+            if os.environ.get(self._prefix + key):
                 raise ValueError(
-                    f"Env var '{key}' has value {value!r} which is not a valid boolean.\n"
+                    f"Env var '{self._prefix + key}' has value {value!r} which is not a valid boolean.\n"
                     f"→ Use: true/false, 1/0, yes/no, y/n, on/off (case-insensitive)"
                 )
             else:
                 raise ValueError(
-                    f"The default value for '{key}' is {value!r} which is not a valid boolean.\n"
+                    f"The default value for '{self._prefix + key}' is {value!r} which is not a valid boolean.\n"
                     f"→ Use: true/false, 1/0, yes/no, y/n, on/off (case-insensitive)"
                 )
 

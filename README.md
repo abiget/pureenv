@@ -61,6 +61,12 @@ DEBUG = env.bool("DEBUG", default=False)
 
 # required - raises a clear error if missing
 DB_URL = env.str("DATABASE_URL", required=True)
+
+# grouping related env variables
+with env.prefix("DB_"):
+    DB_HOST = env("HOST", default="localhost") # reads DB_HOST
+    DB_PORT = env("PORT", default="5432")      # reads DB_PORT
+    DB_NAME = env("NAME", default="mydb")      # reads DB_NAME
 ```
 
 ## Why not `environs` or `python-dotenv`?
@@ -72,3 +78,8 @@ DB_URL = env.str("DATABASE_URL", required=True)
 | Required validation | ✅ | ❌ | ✅ |
 | Loads .env file     | ✅ | ✅ | ✅ |
 | Auto-loads .env     | ✅ | ❌ | ❌ |
+| Prefix grouping     | ✅ | ❌ | ✅ |
+
+
+
+> ✅ **Auto-loads** means no setup needed — just `from pureenv import env` and your `.env` is loaded automatically.
