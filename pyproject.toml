@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinyenv"
+version = "0.1.0"
+description = "Typed environment variable parsing for Python. Zero dependencies. Pure stdlib."
+requires-python = ">=3.8"
+dependencies = []
+keywords = ["environment", "env", "config", "settings", "typed"]
+license = {text = "MIT"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tinyenv*"]
+
+[project.urls]
+Homepage = "https://github.com/abiget/tinyenv"
+Repository = "https://github.com/abiget/tinyenv"
+Issues = "https://github.com/abiget/tinyenv/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
