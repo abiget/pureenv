@@ -9,6 +9,8 @@ _bool = bool
 _str = str
 
 class Env:
+    def __init__(self, environ: dict = None):
+        self._environ = environ if environ is not None else os.environ
     def str(self, key: str, default: str = None,
             required: bool = False) -> str:
         """
@@ -22,7 +24,7 @@ class Env:
         Returns:
             The value of the environment variable as a string, or the default value if not set.
         """
-        value = os.environ.get(key, None)
+        value = self._environ.get(key, None)
 
         if value is None:
             if required:
