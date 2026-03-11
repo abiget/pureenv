@@ -1,5 +1,5 @@
 import pytest
-from tinyenv import Env
+from pureenv import Env
 
 
 def test_str_returns_value():

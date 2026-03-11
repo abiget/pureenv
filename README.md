@@ -1,4 +1,4 @@
-# tinyenv
+# pureenv
 
 Typed environment variable parsing for Python. Zero dependencies. Pure stdlib.
 
@@ -17,7 +17,7 @@ Manual casting. No validation. Cryptic error. Every. Single. Project.
 
 ## The solution
 ```python
-from tinyenv import env
+from pureenv import env
 PORT   = env.int("PORT",            default=8080)
 DEBUG  = env.bool("DEBUG",          default=False)
 DB_URL = env.str("DATABASE_URL",    required=True)
@@ -28,12 +28,12 @@ Typed. Validated. Clear errors when something is wrong.
 
 ## Install
 ```bash
-pip install tinyenv
+pip install pureenv
 ```
 
 ## Usage
 ```python
-from tinyenv import env
+from pureenv import env
 
 # strings
 NAME = env.str("APP_NAME", default="myapp")
@@ -51,7 +51,7 @@ DB_URL = env.str("DATABASE_URL", required=True)
 
 ## Why not `environs` or `python-dotenv`?
 
-| | tinyenv | python-dotenv | environs |
+| | pureenv | python-dotenv | environs |
 |---|---|---|---|
 | Typed casting       | ✅ | ❌ | ✅ |
 | Zero dependencies   | ✅ | ✅ | ❌ |

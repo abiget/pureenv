@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tinyenv"
+name = "pureenv"
 version = "0.1.0"
 description = "Typed environment variable parsing for Python. Zero dependencies. Pure stdlib."
 requires-python = ">=3.8"
@@ -13,12 +13,12 @@ license = {text = "MIT"}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tinyenv*"]
+include = ["pureenv*"]
 
 [project.urls]
-Homepage = "https://github.com/abiget/tinyenv"
-Repository = "https://github.com/abiget/tinyenv"
-Issues = "https://github.com/abiget/tinyenv/issues"
+Homepage = "https://github.com/abiget/pureenv"
+Repository = "https://github.com/abiget/pureenv"
+Issues = "https://github.com/abiget/pureenv/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
