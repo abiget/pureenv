@@ -17,8 +17,10 @@ Manual casting. No validation. Cryptic error. Every. Single. Project.
 
 ## The solution
 ```python
-from pureenv import env
-PORT   = env.int("PORT",            default=8080)
+from pureenv import env # .env file auto-loaded if it exists
+
+PORT   = env("PORT",                default="8080") # no casting needed  
+PORT   = env.int("PORT",            default=8080)   # or typed
 DEBUG  = env.bool("DEBUG",          default=False)
 DB_URL = env.str("DATABASE_URL",    required=True)
 ```
@@ -32,11 +34,23 @@ pip install pureenv
 ```
 
 ## Usage
+Create a `.env` file in your project root:
+```bash
+DATABASE_URL=postgres://localhost/mydb
+DEBUG=true
+PORT=8080
+```
+
+Then just import and use - no setup needed:
+
 ```python
 from pureenv import env
 
-# strings
-NAME = env.str("APP_NAME", default="myapp")
+# strings - without casting (return str)
+APP_NAME  = env("APP_NAME",     default="myapp")
+
+# explicit str
+DB_HOST = env.str("DB_HOST", default="localhost")
 
 # numbers
 PORT  = env.int("PORT",    default=8080)
@@ -56,4 +70,5 @@ DB_URL = env.str("DATABASE_URL", required=True)
 | Typed casting       | ✅ | ❌ | ✅ |
 | Zero dependencies   | ✅ | ✅ | ❌ |
 | Required validation | ✅ | ❌ | ✅ |
-| Loads .env file     | ❌ | ✅ | ✅ |
+| Loads .env file     | ✅ | ✅ | ✅ |
+| Auto-loads .env     | ✅ | ❌ | ❌ |
