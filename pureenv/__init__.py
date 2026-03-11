@@ -143,4 +143,6 @@ class Env:
                     f"The default value for '{key}' is {value!r} which is not a valid boolean.\n"
                     f"→ Use: true/false, 1/0, yes/no, y/n, on/off (case-insensitive)"
                 )
-              
+
+# module-level singleton instance of Env for convenience
+env = Env()
