@@ -131,3 +131,34 @@ def test_load_env_file():
         for key in ["PUREENV_TEST_PORT", "PUREENV_TEST_DEBUG", "PUREENV_TEST_APP", "PUREENV_TEST_DB"]:
             os.environ.pop(key, None)
     os.unlink(filepath)
+
+
+def test_prefix_basic():
+    env = Env(environ={"DB_HOST": "localhost", "DB_PORT": "5432"})
+
+    with env.prefix("DB_"):
+        assert env.str("HOST") == "localhost"
+        assert env.int("PORT") == 5432
+
+def test_prefix_clears_after_block():
+    env = Env(environ={"DB_HOST": "localhost"})
+
+    with env.prefix("DB_"):
+        assert env("HOST") == "localhost"
+        
+    assert env.int("HOST") is None # prefix cleared, HOST doesn't exist
+
+def test_prefix_multiple_groups():
+    env = Env(environ={
+        "DB_HOST": "localhost",
+        "REDIS_HOST": "127.0.0.1"
+    })
+
+    with env.prefix("DB_"):
+        db_host = env("HOST")
+    
+    with env.prefix("REDIS_"):
+        redis_host = env("HOST")
+
+    assert db_host == "localhost"
+    assert redis_host == "127.0.0.1"
