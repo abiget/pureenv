@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pureenv"
-version = "0.2.0"
+version = "0.2.1"
 description = "Typed environment variable parsing for Python. Zero dependencies. Pure stdlib."
+readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
 keywords = ["environment", "env", "config", "settings", "typed"]
