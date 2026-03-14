@@ -1,7 +1,8 @@
 import os
 import sys
 from contextlib import contextmanager
-from typing import Generator
+from pathlib import Path
+from typing import Dict, Generator
 
 # Store references to the original int and float functions to avoid issues
 #  if they are overridden in the environment
@@ -30,7 +31,7 @@ class Env:
         DB_URL = env("DB_URL", required=True) 
     """
 
-    def __init__(self, environ: dict = None) -> None:
+    def __init__(self, environ: Dict[str, str] | None = None) -> None:
         """
         Initialize the Env instance.
 
@@ -106,7 +107,7 @@ class Env:
             DEBUG=true # enable debug mode
         """
 
-        if not os.path.exists(filepath):
+        if not Path(filepath).exists():
             return
         
         with open(filepath, "r") as file:
