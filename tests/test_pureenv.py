@@ -1,6 +1,9 @@
 import os
-import pytest
 import tempfile
+from pathlib import Path
+
+import pytest
+
 from pureenv import Env
 
 
@@ -8,13 +11,16 @@ def test_str_returns_value():
     env = Env(environ={"NAME": "alice"})
     assert env.str("NAME") == "alice"
 
+
 def test_str_returns_default():
     env = Env(environ={})
     assert env.str("MISSING", default="fallback") == "fallback"
 
+
 def test_str_returns_none_when_no_default():
     env = Env(environ={})
     assert env.str("MISSING") is None
+
 
 def test_str_raises_when_required():
     env = Env(environ={})
@@ -27,9 +33,11 @@ def test_int_returns_value():
     env = Env(environ={"PORT": "8080"})
     assert env.int("PORT") == 8080
 
+
 def test_int_returns_default():
     env = Env(environ={})
     assert env.int("MISSING", default=3306) == 3306
+
 
 def test_int_raises_on_invalid_value():
     env = Env(environ={"PORT": "not_a_number"})
@@ -37,25 +45,30 @@ def test_int_raises_on_invalid_value():
     with pytest.raises(ValueError, match="PORT"):
         env.int("PORT")
 
+
 def test_int_raises_when_required():
     env = Env(environ={})
 
     with pytest.raises(ValueError, match="PORT"):
         env.int("PORT", required=True)
 
+
 def test_float_returns_value():
     env = Env(environ={"PI": "3.14"})
     assert env.float("PI") == 3.14
 
+
 def test_float_returns_default():
     env = Env(environ={})
     assert env.float("MISSING", default=3.14) == 3.14
+
 
 def test_float_raises_on_invalid_value():
     env = Env(environ={"PI": "not_a_number"})
 
     with pytest.raises(ValueError, match="PI"):
         env.float("PI")
+
 
 def test_float_raises_when_required():
     env = Env(environ={})
@@ -69,20 +82,24 @@ def test_bool_truthy_values(value):
     env = Env(environ={"DEBUG": value})
     assert env.bool("DEBUG") is True
 
+
 @pytest.mark.parametrize("value", ("false", "0", "no", "n", "off"))
 def test_bool_falsy_values(value):
     env = Env(environ={"DEBUG": value})
     assert env.bool("DEBUG") is False
 
+
 def test_bool_returns_default():
     env = Env(environ={})
     assert env.bool("MISSING", default=False) is False
+
 
 def test_bool_raises_on_invalid_value():
     env = Env(environ={"DEBUG": "maybe"})
 
     with pytest.raises(ValueError, match="DEBUG"):
         env.bool("DEBUG")
+
 
 def test_bool_raises_when_required():
     env = Env(environ={})
@@ -91,18 +108,19 @@ def test_bool_raises_when_required():
         env.bool("MISSING", required=True)
 
 
-
 def test_env_callable_returns_string():
     env = Env(environ={"PORT": "8080"})
     assert env("PORT") == "8080"
+
 
 def test_env_callable_returns_default():
     env = Env(environ={})
     assert env("MISSING", default="foo") == "foo"
 
+
 def test_env_callable_raises_when_required():
     env = Env(environ={})
-    
+
     with pytest.raises(ValueError, match="MISSING"):
         env("MISSING", required=True)
 
@@ -125,10 +143,17 @@ def test_load_env_file():
         assert env.int("PUREENV_TEST_PORT") == 9000
         assert env.bool("PUREENV_TEST_DEBUG") is True
         assert env.str("PUREENV_TEST_APP_NAME") == "pureenv"
-        assert env("PUREENV_TEST_DB_URL") == "postgres://localhost:5432/mydb#users" # # in URL preserved
+        assert (
+            env("PUREENV_TEST_DB_URL") == "postgres://localhost:5432/mydb#users"
+        )  # # in URL preserved
     finally:
         # cleanup — remove test vars from os.environ
-        for key in ["PUREENV_TEST_PORT", "PUREENV_TEST_DEBUG", "PUREENV_TEST_APP", "PUREENV_TEST_DB"]:
+        for key in [
+            "PUREENV_TEST_PORT",
+            "PUREENV_TEST_DEBUG",
+            "PUREENV_TEST_APP",
+            "PUREENV_TEST_DB",
+        ]:
             os.environ.pop(key, None)
     os.unlink(filepath)
 
@@ -140,25 +165,60 @@ def test_prefix_basic():
         assert env.str("HOST") == "localhost"
         assert env.int("PORT") == 5432
 
+
 def test_prefix_clears_after_block():
     env = Env(environ={"DB_HOST": "localhost"})
 
     with env.prefix("DB_"):
         assert env("HOST") == "localhost"
-        
-    assert env.int("HOST") is None # prefix cleared, HOST doesn't exist
+
+    assert env.int("HOST") is None  # prefix cleared, HOST doesn't exist
+
 
 def test_prefix_multiple_groups():
-    env = Env(environ={
-        "DB_HOST": "localhost",
-        "REDIS_HOST": "127.0.0.1"
-    })
+    env = Env(environ={"DB_HOST": "localhost", "REDIS_HOST": "127.0.0.1"})
 
     with env.prefix("DB_"):
         db_host = env("HOST")
-    
+
     with env.prefix("REDIS_"):
         redis_host = env("HOST")
 
     assert db_host == "localhost"
     assert redis_host == "127.0.0.1"
+
+
+def test_find_env_file_current_dir():
+    env = Env()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_path = Path(tmpdir)
+        (base_path / ".env").write_text("BASE_VAR=base\n")
+
+        print(f"Created .env file at: {base_path.name}")
+        # test finding .env from subdir
+        found_path = env._find_env_file(filename=".env", start_path=base_path)
+        assert found_path == base_path / ".env"
+
+        # remove from environ to avoid interference with other tests
+        for key in ["BASE_VAR"]:
+            os.environ.pop(key, None)
+
+
+def test_find_env_file_upwards():
+    env = Env()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_path = Path(tmpdir)
+        (base_path / ".env").write_text("BASE_VAR=base\n")
+        (base_path / "subdir").mkdir()
+
+        # test finding .env from subdir
+        found_path = env._find_env_file(
+            filename=".env", start_path=base_path / "subdir"
+        )
+        assert found_path == base_path / ".env"
+
+        # remove from environ to avoid interference with other tests
+        for key in ["BASE_VAR"]:
+            os.environ.pop(key, None)

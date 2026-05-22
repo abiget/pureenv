@@ -11,6 +11,7 @@ _float = float
 _bool = bool
 _str = str
 
+
 class Env:
     """
     Typed environment variable reader with auto .env file loading.
@@ -28,7 +29,7 @@ class Env:
         # or without casting:
         PORT   = env("PORT", default="8080")
         DEBUG  = env("DEBUG", default="false")
-        DB_URL = env("DB_URL", required=True) 
+        DB_URL = env("DB_URL", required=True)
     """
 
     def __init__(self, environ: Dict[str, str] | None = None) -> None:
@@ -50,7 +51,7 @@ class Env:
 
         self._environ = environ if environ is not None else os.environ
         self._prefix = ""
-        if environ is None: # only auto-load when using real os.environ
+        if environ is None:  # only auto-load when using real os.environ
             self._load_env_file()
 
     @contextmanager
@@ -77,10 +78,50 @@ class Env:
         """
 
         self._prefix = prefix
-        yield self
-        self._prefix = ""
+        try:
+            yield self
+        finally:
+            self._prefix = ""
 
-    
+    def _find_env_file(
+        self, filename: str = ".env", start_path: Path = None
+    ) -> Path | None:
+        """
+        Search upwards from the start_path for a file with the given filename.
+
+        Args:
+            filename: The name of the file to search for (default: ".env").
+            start_path: The directory to start searching from (default: current working directory).
+        Returns:
+            The Path to the found file, or None if not found.
+
+        Example:
+            # If the current directory is /project and we have:
+            # /project/.env
+            # /project/subdir/.env
+            # Then:
+            env._find_env_file(".env", start_path=Path("/project/subdir"))
+            # will return Path("/project/subdir/.env") because it finds the closest .env file first.
+        """
+        # search upwards from the start_path
+        if start_path is None:
+            start_path = Path.cwd()
+
+        current_path = start_path.resolve()
+
+        # keep searching upwards until we find the file or reach the filesystem root
+        while True:
+            candidate = current_path / filename
+            if candidate.exists():
+                return candidate
+
+            if current_path.parent == current_path:
+                break
+
+            current_path = current_path.parent
+
+        return None
+
     def _load_env_file(self, filepath: str = ".env") -> None:
         """
         Auto-load environment variables from a .env file into os.environ.
@@ -100,17 +141,25 @@ class Env:
 
         Args:
             filepath: Path to the .env file (default: ".env")
-        
+
         Example .env file:
             DATABASE_URL=postgres://localhost/mydb
             PORT=8080 # the app port
             DEBUG=true # enable debug mode
         """
 
-        if not Path(filepath).exists():
-            return
-        
-        with open(filepath, "r") as file:
+        # first try exact path
+        path = Path(filepath)
+
+        # if not found, try searching upwards for a .env file
+        if not path.exists():
+            filename = path.name or ".env"
+            path = self._find_env_file(filename=filename)
+
+        if path is None or not path.exists():
+            return  # no .env file found, silently skip
+
+        with open(path, "r") as file:
             for line in file:
                 line = line.strip()
 
@@ -125,9 +174,13 @@ class Env:
 
                 # remove inline comments
                 value = value.split(" #")[0]
-                
-                # strip whitespace and optional quotes
-                value = value.strip().strip('"').strip("'")
+
+                # strip extra whitespace and remove matching quotes
+                value = value.strip()
+                if value.startswith('"') and value.endswith('"'):
+                    value = value.strip('"')
+                elif value.startswith("'") and value.endswith("'"):
+                    value = value.strip("'")
 
                 if key not in self._environ:
                     self._environ[key] = value
@@ -141,7 +194,7 @@ class Env:
             key: The name of the environment variable.
             default: The default value to return if the variable is not set (default: None).
             required: If True, raises an error if the variable is not set (default: False).
-        
+
         Returns:
             The value as a string, or the default value if not set.
 
@@ -150,9 +203,8 @@ class Env:
             env("PORT", default="8080")  # equivalent to env.str("PORT", default="8080")
         """
         return self.str(key, default=default, required=required)
-    
-    def str(self, key: str, default: str = None,
-            required: bool = False) -> str:
+
+    def str(self, key: str, default: str = None, required: bool = False) -> str:
         """
         Get an environment variable as a string.
 
@@ -179,9 +231,8 @@ class Env:
                 )
             return _str(default) if default is not None else None
         return value
-    
-    def int(self, key: str, default: int = None, 
-            required: bool = False) -> int:
+
+    def int(self, key: str, default: int = None, required: bool = False) -> int:
         """
         Get an environment variable as an integer.
         Args:
@@ -196,7 +247,7 @@ class Env:
 
         if value is None:
             return None
-        
+
         try:
             return _int(value)
         except (ValueError, TypeError):
@@ -209,9 +260,8 @@ class Env:
                 raise ValueError(
                     f"Default value for '{self._prefix + key}' is {value!r} which is not a valid integer."
                 )
-        
-    def float(self, key: str, default: float = None,
-                required: bool = False) -> float:
+
+    def float(self, key: str, default: float = None, required: bool = False) -> float:
         """
         Get an environment variable as a float.
 
@@ -238,9 +288,8 @@ class Env:
                 raise ValueError(
                     f"Default value for '{self._prefix + key}' is {value!r} which is not a valid float."
                 )
-        
-    def bool(self, key: str, default: bool = None,
-                required: bool = False) -> bool:
+
+    def bool(self, key: str, default: bool = None, required: bool = False) -> bool:
         """
         Get an environment variable as a boolean.
 
@@ -260,13 +309,13 @@ class Env:
 
         if value is None:
             return None
-        
+
         if isinstance(value, _bool):
             return value
-        
+
         if isinstance(value, (_int, _float)):
             return _bool(value)
-        
+
         value_lower = value.lower()
         if value_lower in ("true", "1", "yes", "y", "on"):
             return True
@@ -284,5 +333,8 @@ class Env:
                     f"→ Use: true/false, 1/0, yes/no, y/n, on/off (case-insensitive)"
                 )
 
+
 # module-level singleton instance of Env for convenience
 env = Env()
+
+__add__ = ["Env", "env"]
