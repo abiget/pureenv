@@ -2,7 +2,7 @@ import os
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Generator
+from typing import Dict, Generator, Optional
 
 # Store references to the original int and float functions to avoid issues
 #  if they are overridden in the environment
@@ -85,7 +85,7 @@ class Env:
 
     def _find_env_file(
         self, filename: str = ".env", start_path: Path = None
-    ) -> Path | None:
+    ) -> Optional[Path]:
         """
         Search upwards from the start_path for a file with the given filename.
 
